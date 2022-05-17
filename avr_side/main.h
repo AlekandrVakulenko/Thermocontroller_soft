@@ -30,7 +30,7 @@ uint8_t Uart_request_flag;
 typedef struct UART_send_packet{
 	uint16_t Temp_cK; //2
 	uint16_t Temp_sp_cK; //2
-	uint16_t Temp_gsp_cK; //2
+	uint16_t Temp_r_t_cK; //2
 	uint16_t Vout_d; //2
 	uint16_t Vin_d; //2
 	uint32_t trig_time; //4
