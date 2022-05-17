@@ -35,6 +35,7 @@ void DAC_set(uint16_t arg){
 	sei();
 }
 
+
 uint16_t ADC_read_low_level(void){
 	SPCR1 = 0b01010001; //FOR ADC
 	_NOP;
@@ -51,8 +52,7 @@ uint16_t ADC_read_low_level(void){
 }
 
 
-
-uint16_t ADC_filter(){
+uint16_t ADC_read(){
 	static uint8_t adc_buf_clk = 0;
 	static uint16_t adc_buf[32];
 	

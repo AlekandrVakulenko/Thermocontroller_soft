@@ -59,8 +59,7 @@ void GPIOinit(void){
 	PORTE = 0b0100;
 }
 
-void UARTinit(void){
-	//230.4k-8-N-1
+void UARTinit(void){ //230.4k-8-N-1
 	UCSR0A = 0b00000010; //удвоение скорости(1)
 	UCSR0B = 0b10011000;
 	UCSR0C = 0b00000110;
@@ -70,14 +69,14 @@ void UARTinit(void){
 
 void SPIinit(void){
 	SPSR1 = 0b00000000;
-	SPCR1 = 0b01010101; //FOR DAC
+	//SPCR1 = 0b01010101; //FOR DAC
 	SPCR1 = 0b01010001; //FOR ADC
 
 	//SPDR1 = ; data reg
 	//while (!(SPSR1 & 0b10000000)){_NOP;}
 }
 
-void Timer1init(void){
+void Timer1init(void){ //1.25ms
 	TCCR1A = 0b00000000;
 	TCNT1 = 0x0000;
 	OCR1A = 24999;
@@ -86,7 +85,7 @@ void Timer1init(void){
 }
 
 void GPIOinterrupstinit(void){
-	//INT1 and INT0
+	//enable INT0
 	EICRA = 0b00000001; //int0 to any edge
 	EIMSK = 0b00000001; //enable int0
 }

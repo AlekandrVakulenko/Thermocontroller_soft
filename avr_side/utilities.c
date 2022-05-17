@@ -2,12 +2,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "Defines.h"
+#include "utilities.h"
 
 
-
-
-
-extern void DelayAsmX5(uint16_t arg); //принимает число x5 тактов для ожидания  
   
 void Delay100ms(){
 	for (uint8_t i=0; i<10; i++){ //100 ms
