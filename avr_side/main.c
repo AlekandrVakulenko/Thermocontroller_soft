@@ -10,6 +10,7 @@
 #include "utilities.h"
 #include "Defines.h"
 #include "DAC_ADC.h"
+#include "PID.h"
 //----------------------------------------------------------------------------
 
 
@@ -25,13 +26,7 @@ float Temp_setpoint_f = 0;
 uint16_t Temp_Gsetpoint = 0;
 float Temp_Gsetpoint_f = 0;
 
-float temp_error = 0;
-float temp_error_Z1 = 0;
-float filter = 0.2;
-float derivative = 0;
-float derivative_Z1 = 0;
-float temp_error_sum = 0;
-float PID_out = 0;
+
 //----------------------------------------------------------------------------
 //----------------------------------Main--------------------------------------
 //----------------------------------------------------------------------------
@@ -45,18 +40,9 @@ int main(void){
 			adc_filtered_value = ADC_read();
 			Temp_measured_f = (float)adc_filtered_value/65536*5 * 58.5 + 189.9;
 			Temp_measured = (uint16_t)(Temp_measured_f*100);
-			temp_error = (Temp_setpoint_f - Temp_measured_f);
-			derivative = temp_error - temp_error_Z1;
-			derivative = filter*derivative + (1-filter)*derivative_Z1;
-			derivative_Z1 = derivative;
-			temp_error_Z1 = temp_error;
-			temp_error_sum += temp_error;
-			if (temp_error_sum > 800) temp_error_sum = 800;
-			if (temp_error_sum < -800) temp_error_sum = -800;
-			PID_out = temp_error*800 + temp_error_sum*1.5 + (derivative)*80000;
-			if (PID_out < 0) PID_out = 0;
-			if (PID_out > 2048) PID_out = 2048;
-			voltageout_d = (uint16_t) PID_out;
+			
+			
+			voltageout_d = PID_func(&Temp_setpoint_f, &Temp_measured_f);
 			DAC_set(voltageout_d);
 		}
 
