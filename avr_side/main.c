@@ -19,13 +19,13 @@ uint16_t adc_filtered_value = 0;
 uint16_t voltageout_d = 0;
 uint32_t trig_last_value = 0;
 
-uint16_t Temp_measured = 0;
-float Temp_measured_f = 0;
-uint16_t Temp_setpoint = 0;
-float Temp_setpoint_f = 0;
-uint16_t Temp_ramp_target = 0;
-float Temp_ramp_target_f = 0;
 
+float Temp_measured_f = 0;
+float Temp_setpoint_f = 0;
+float Temp_ramp_target_f = 0;
+float Temp_ramp_speed_f = 0;
+uint8_t ramping_flag = 0;
+uint8_t ramp_direction = 0; // 1 - heat, 0 - cool
 
 
 //----------------------------------------------------------------------------
@@ -35,16 +35,14 @@ int main(void){
 	setup(); //CPU init
 
 	while(1){
-		
+
 		if (timer_clk == 1){
 			Green_1_ON;
 			timer_clk = 0;
-			adc_filtered_value = ADC_read();
+			uint16_t adc_filtered_value = ADC_read();
 			Temp_measured_f = (float)adc_filtered_value/65536*5 * 58.5 + 189.9;
-			Temp_measured = (uint16_t)(Temp_measured_f*100);
-			
-			
-			
+
+
 			voltageout_d = PID_func(&Temp_setpoint_f, &Temp_measured_f);
 			DAC_set(voltageout_d);
 			Green_1_OFF;
@@ -54,18 +52,16 @@ int main(void){
 			trig_last_value = ReadTrigCounterResult();
 		}
 
-		UART_output_buffer.data.Temp_cK = Temp_measured;
-		UART_output_buffer.data.Temp_sp_cK = Temp_setpoint;
-		UART_output_buffer.data.Temp_r_t_cK = Temp_ramp_target;
+		UART_output_buffer.data.Temp_cK = (uint16_t)(Temp_measured_f*100);
+		UART_output_buffer.data.Temp_sp_cK = (uint16_t)(Temp_setpoint_f*100);
+		UART_output_buffer.data.Temp_r_t_cK = (uint16_t)(Temp_ramp_target_f*100);
 		UART_output_buffer.data.Vout_d = voltageout_d;
 		UART_output_buffer.data.Vin_d = adc_filtered_value; //unused (-2)
 		UART_output_buffer.data.trig_time = trig_last_value; //too long (-2)
-		FLOAT_BUF float_buf;
-		float_buf.f = get_derivative();
-		UART_output_buffer.data.serv1 = float_buf.buf[0];
-		UART_output_buffer.data.serv2 = float_buf.buf[1];
-		UART_output_buffer.data.serv3 = float_buf.buf[2]; //unused (-1)
-		UART_output_buffer.data.serv4 = float_buf.buf[3]; //unused (-1)
+		UART_output_buffer.data.serv1 = 1;
+		UART_output_buffer.data.serv2 = 2;
+		UART_output_buffer.data.serv3 = 3; //unused (-1)
+		UART_output_buffer.data.serv4 = 4; //unused (-1)
 
 		if (ReadUARTsendtimer(Uart_send_period)){ //It's time to send data to PC
 			if ((Uart_ackn == 0) & (Uart_request_flag == 1)){
@@ -92,7 +88,6 @@ int main(void){
 			sei();
 			UartCMDexecute();
 		}
-
 
 	} //while(1)
 } //main
@@ -148,7 +143,7 @@ void UartCMDexecute(void){ //переделать в SWITCH CASE
 
 		} else if (UART_CMD.cmd == 0x04) {
 
-		} else if (UART_CMD.cmd == 0x05) {
+		} else if (UART_CMD.cmd == 0x05) { //SET sending speed
 			uint16_t Value = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
 			if (Value>8000){Value = 8000;}
 			if (Value<8){Value = 8;}
@@ -156,19 +151,35 @@ void UartCMDexecute(void){ //переделать в SWITCH CASE
 			cli();
 			Uart_send_timer = 0;
 			sei();
-		} else if (UART_CMD.cmd == 0x06) {
+			
+		} else if (UART_CMD.cmd == 0x06) { //ackn
 			Uart_ackn = 0;
-		} else if (UART_CMD.cmd == 0x07) {
-			Temp_ramp_target = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
-			Temp_ramp_target_f = ((float)Temp_ramp_target)/100;
-		} else if (UART_CMD.cmd == 0x08) {
-			Temp_setpoint = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
-			Temp_setpoint_f = ((float)Temp_setpoint)/100;
-		} else if (UART_CMD.cmd == 0x09) {
+			
+		} else if (UART_CMD.cmd == 0x07) { //SET ramp target
+			uint16_t ramp_temp_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
+			Temp_ramp_target_f = ((float) ramp_temp_d)/100;
+			uint16_t ramp_speed_d = (uint16_t)(UART_CMD.argBH<8)+(uint16_t)(UART_CMD.argBL);
+			Temp_ramp_speed_f = ((float) ramp_speed_d)/100;
+			if (Temp_setpoint_f < Temp_ramp_target_f){
+				ramp_direction = 1;
+			} else {
+				ramp_direction = 0;
+			}
+			ramping_flag = 1;
+			
+		} else if (UART_CMD.cmd == 0x08) { //SET temp_set_point
+			uint16_t value_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
+			Temp_setpoint_f = ((float) value_d)/100;
+			ramping_flag = 0;
+			
+		} else if (UART_CMD.cmd == 0x09) { //SET output voltage
 			voltageout_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
 			DAC_set(voltageout_d);
-		} else if (UART_CMD.cmd == 0x0A) {
+			ramping_flag = 0;
+			
+		} else if (UART_CMD.cmd == 0x0A) { // Data Request
 			Uart_request_flag = 1;
+			
 		} else if (UART_CMD.cmd == 0x0B) {
 
 		} else if (UART_CMD.cmd == 0x0C) {

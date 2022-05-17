@@ -19,10 +19,6 @@ struct {
 } PID_coeff = {900, 1.4, 1400, 0.5};
 
 
-int32_t get_derivative(void){
-	return (int32_t)(derivative*100000);
-}
-
 uint16_t PID_func(float* Temp_setpoint_f, float *Temp_measured_f){
 	static float Temp_setpoint_f_Z1 = 0;
 	static uint16_t PID_counter1 = 0, PID_counter2 = 0;
