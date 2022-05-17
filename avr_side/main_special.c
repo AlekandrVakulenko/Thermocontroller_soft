@@ -31,7 +31,9 @@ void DAC_set(uint16_t arg){
 
 
 
-uint16_t ADC_read(void){
+
+
+uint16_t ADC_read_low_level(void){
 	SPCR1 = 0b01010101; //SPI init for DAC
 	_NOP;
 	cli();
@@ -47,10 +49,12 @@ uint16_t ADC_read(void){
 }
 
 
-uint8_t adc_buf_clk = 0;
-uint16_t adc_buf[32];
+
 uint16_t ADC_filter(){
-	adc_buf[adc_buf_clk] = ADC_read();
+	static uint8_t adc_buf_clk = 0;
+	static uint16_t adc_buf[32];
+	
+	adc_buf[adc_buf_clk] = ADC_read_low_level();
 	adc_buf_clk++;
 	adc_buf_clk = adc_buf_clk & 0b00011111;
 	
@@ -60,13 +64,6 @@ uint16_t ADC_filter(){
 		midvalue += adc_buf[i];
 	}
 	return (uint16_t)(midvalue >> 5);
-}
-
-float temp_speed(){
-	float delta_V = (float)adc_buf[0] - (float)adc_buf[31];
-	float delta_T = delta_V/65536*5 * 58.5;
-	delta_T /= 0.05;
-	return delta_T;
 }
 
 
