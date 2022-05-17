@@ -16,10 +16,8 @@ void Timer1init(void);
 
 void UartCMDexecute(void);
 
-void DAC_set(uint16_t arg);
-uint16_t ADC_read(void);
-uint16_t ADC_filter(void);
-float temp_speed(void);
+
+
 
 void Led_intro();
 

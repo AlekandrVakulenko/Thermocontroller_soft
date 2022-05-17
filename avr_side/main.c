@@ -8,6 +8,7 @@
 
 #include "main.h"
 #include "Defines.h"
+#include "DAC_ADC.h"
 //----------------------------------------------------------------------------
 
 volatile uint32_t TrigCounter;
