@@ -1,0 +1,9 @@
+
+
+avr_side/.vs
+avr_side/Debug
+*.atsln
+*.xml
+*.cproj
+
+
