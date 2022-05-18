@@ -14,7 +14,7 @@
 //----------------------------------------------------------------------------
 
 
-uint8_t timer_clk = 0;
+volatile uint8_t timer_clk = 0;
 uint16_t adc_filtered_value = 0;
 uint16_t voltageout_d = 0;
 uint32_t trig_last_value = 0;
@@ -23,9 +23,10 @@ uint32_t trig_last_value = 0;
 float Temp_measured_f = 0;
 float Temp_setpoint_f = 0;
 float Temp_ramp_target_f = 0;
-float Temp_ramp_speed_f = 0;
+float Temp_ramp_speed_f = 0; // K/min
 uint8_t ramping_flag = 0;
 uint8_t ramp_direction = 0; // 1 - heat, 0 - cool
+uint8_t heating_flag = 0;
 
 
 //----------------------------------------------------------------------------
@@ -35,59 +36,80 @@ int main(void){
 	setup(); //CPU init
 
 	while(1){
+		Led_control_G2OR(heating_flag, ramping_flag, (uint8_t) (voltageout_d > 0));
 
+		
 		if (timer_clk == 1){
-			Green_1_ON;
+			static uint8_t local_timer = 0;
 			timer_clk = 0;
-			uint16_t adc_filtered_value = ADC_read();
+			local_timer++;
+			if (local_timer == 100){ //100*0.00125 = 0.125 s
+				local_timer = 0;
+				if (ramping_flag && heating_flag){
+					float delta_temp = Temp_ramp_speed_f/480;
+					if (ramp_direction){
+						Temp_setpoint_f += delta_temp;
+						if (Temp_setpoint_f >= Temp_ramp_target_f){
+							ramping_flag = 0;
+							Temp_setpoint_f = Temp_ramp_target_f;
+						}
+					} else {
+						Temp_setpoint_f -= delta_temp;
+						if (Temp_setpoint_f <= Temp_ramp_target_f){
+							ramping_flag = 0;
+							Temp_setpoint_f = Temp_ramp_target_f;
+						}
+					}
+				}
+			}
+
+			adc_filtered_value = ADC_read();
 			Temp_measured_f = (float)adc_filtered_value/65536*5 * 58.5 + 189.9;
 
-
 			voltageout_d = PID_func(&Temp_setpoint_f, &Temp_measured_f);
-			DAC_set(voltageout_d);
-			Green_1_OFF;
+			if (Temp_measured_f > 395) voltageout_d = 0; //second protection
+			if (heating_flag) DAC_set(voltageout_d);
 		}
 
 		if (TrigCounterFlag == 1){
 			trig_last_value = ReadTrigCounterResult();
-		}
+		} //FIXME: add else
 
+		//UART data preparing to send
 		UART_output_buffer.data.Temp_cK = (uint16_t)(Temp_measured_f*100);
 		UART_output_buffer.data.Temp_sp_cK = (uint16_t)(Temp_setpoint_f*100);
 		UART_output_buffer.data.Temp_r_t_cK = (uint16_t)(Temp_ramp_target_f*100);
 		UART_output_buffer.data.Vout_d = voltageout_d;
 		UART_output_buffer.data.Vin_d = adc_filtered_value; //unused (-2)
 		UART_output_buffer.data.trig_time = trig_last_value; //too long (-2)
-		UART_output_buffer.data.serv1 = 1;
-		UART_output_buffer.data.serv2 = 2;
-		UART_output_buffer.data.serv3 = 3; //unused (-1)
+		UART_output_buffer.data.serv1 = heating_flag;
+		UART_output_buffer.data.serv2 = ramping_flag;
+		UART_output_buffer.data.serv3 = (uint8_t) (voltageout_d > 0);
 		UART_output_buffer.data.serv4 = 4; //unused (-1)
 
 		if (ReadUARTsendtimer(Uart_send_period)){ //It's time to send data to PC
 			if ((Uart_ackn == 0) & (Uart_request_flag == 1)){
-				Green_2_ON;
 				for (int8_t i = sizeof(UART_SEND_PACKET)-1; i>=0; --i){
 					while(!(UCSR0A & 0b00100000)){_NOP;}
 					UDR0 = UART_output_buffer.buf[i];
 				}
 				Uart_ackn = 1;
 				Uart_request_flag = 0;
-				Green_2_OFF;
 			}
 		}
 
 		UARTrecivetimeoutCheck();
-		if (Uart_receive_buffer_len == 5){ //FIXME: where is a way to receive a new byte after IF condition is TRUE
-			cli();
+		cli();
+		if (Uart_receive_buffer_len == 5){
 			UART_CMD.cmd = Uart_receive_buffer[0];
 			UART_CMD.argAH = Uart_receive_buffer[1];
 			UART_CMD.argAL = Uart_receive_buffer[2];
 			UART_CMD.argBH = Uart_receive_buffer[3];
 			UART_CMD.argBL = Uart_receive_buffer[4];
 			Uart_receive_buffer_len = 0;
-			sei();
 			UartCMDexecute();
 		}
+		sei();
 
 	} //while(1)
 } //main
@@ -118,6 +140,8 @@ void setup(void){
 	Uart_receive_buffer[0] = 0;
 	Uart_ackn = 0;
 	Uart_request_flag = 0;
+
+	heating_flag = 0;
 
 	ADC_CSSet;
 	DAC_CSSet;
@@ -151,14 +175,14 @@ void UartCMDexecute(void){ //переделать в SWITCH CASE
 			cli();
 			Uart_send_timer = 0;
 			sei();
-			
+
 		} else if (UART_CMD.cmd == 0x06) { //ackn
 			Uart_ackn = 0;
-			
+
 		} else if (UART_CMD.cmd == 0x07) { //SET ramp target
 			uint16_t ramp_temp_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
+			uint16_t ramp_speed_d = (uint16_t)(UART_CMD.argBH<<8)+(uint16_t)(UART_CMD.argBL);
 			Temp_ramp_target_f = ((float) ramp_temp_d)/100;
-			uint16_t ramp_speed_d = (uint16_t)(UART_CMD.argBH<8)+(uint16_t)(UART_CMD.argBL);
 			Temp_ramp_speed_f = ((float) ramp_speed_d)/100;
 			if (Temp_setpoint_f < Temp_ramp_target_f){
 				ramp_direction = 1;
@@ -166,24 +190,24 @@ void UartCMDexecute(void){ //переделать в SWITCH CASE
 				ramp_direction = 0;
 			}
 			ramping_flag = 1;
-			
+
 		} else if (UART_CMD.cmd == 0x08) { //SET temp_set_point
 			uint16_t value_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
 			Temp_setpoint_f = ((float) value_d)/100;
 			ramping_flag = 0;
-			
+
 		} else if (UART_CMD.cmd == 0x09) { //SET output voltage
 			voltageout_d = (uint16_t)(UART_CMD.argAH<<8)+(uint16_t)(UART_CMD.argAL);
 			DAC_set(voltageout_d);
 			ramping_flag = 0;
-			
+
 		} else if (UART_CMD.cmd == 0x0A) { // Data Request
 			Uart_request_flag = 1;
-			
-		} else if (UART_CMD.cmd == 0x0B) {
 
-		} else if (UART_CMD.cmd == 0x0C) {
-
+		} else if (UART_CMD.cmd == 0x0B) { //Enable heater
+			heating_flag = 1;
+		} else if (UART_CMD.cmd == 0x0C) { //Disable heater
+			heating_flag = 0;
 		} else if (UART_CMD.cmd == 0x0D) {
 
 		} else if (UART_CMD.cmd == 0x0E) {

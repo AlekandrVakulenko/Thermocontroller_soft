@@ -13,6 +13,28 @@ void Delay100ms(){
 }
 
 
+void Led_control_G2OR(uint8_t G2, uint8_t O, uint8_t R){
+			if (G2){
+				Green_2_ON;
+				} else {
+				Green_2_OFF;
+			}
+			
+			if(O){
+				Orange_ON;
+				} else {
+				Orange_OFF;
+			}
+			
+			if (R){
+				RedON;
+				} else {
+				RedOFF;
+			}
+}
+
+
+
 void Led_intro(){
 	Green_1_OFF;
 	Green_2_OFF;
