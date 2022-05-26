@@ -2,10 +2,10 @@
 clc
 addpath('include/')
 
-Output_file_adr = '../LabView Side/input_T_list.txt';
+Output_file_adr = '../LabView Side/input_T_list_2.txt';
 
 % Temp_list = [20:2:120 118:-2:20] + 273.15;
-Temp_list = [25:5:40 35:-5:25] + 273.15;
+Temp_list = [25:5:40 35:-5:20] + 273.15;
 
 
 create_file(Temp_list, Output_file_adr);
@@ -29,14 +29,16 @@ if Max > 120
 end
 
 fid = fopen(Output_file_adr, 'w');
-for i = 1:numel(Temp_list)
+N = numel(Temp_list);
+for i = 1:N
     Line = num2str(Temp_list(i), '%6.2f');
     fwrite(fid, Line);
-    if i ~= numel(Temp_list)
+    if i ~= N
         fwrite(fid, newline);
     end
 end
 fclose(fid);
+disp(['file created: ' num2str(N) ' T points'])
 end
 
 

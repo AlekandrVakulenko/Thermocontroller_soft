@@ -4,7 +4,6 @@
 
 
 float temp_error = 0;
-float temp_error_Z1 = 0;
 float filter = 1;
 float derivative = 0;
 float derivative_Z1 = 0;
@@ -30,6 +29,7 @@ uint16_t PID_func(float* Temp_setpoint_f, float *Temp_measured_f){
 	PID_counter2 &= 0b00001111; //16
 
 	temp_error = (*Temp_setpoint_f - *Temp_measured_f);
+	
 	error_array[PID_counter1] = temp_error;
 	if (abs(*Temp_setpoint_f - Temp_setpoint_f_Z1) > 0.1){
 		for (int8_t i = 0; i<16; ++i){
@@ -38,15 +38,10 @@ uint16_t PID_func(float* Temp_setpoint_f, float *Temp_measured_f){
 	}
 	Temp_setpoint_f_Z1 = *Temp_setpoint_f;
 
-	//derivative = temp_error - temp_error_Z1;
-	//derivative = filter*derivative + (1-filter)*derivative_Z1;
 	derivative = error_array[PID_counter1] - error_array[PID_counter2];
 	derivative = filter * derivative + (1-filter) * derivative_Z1;
-	//if (derivative > 5) derivative = 0.2;
-	//if (derivative < -5) derivative = -0.2;
 	derivative_Z1 = derivative;
 
-	temp_error_Z1 = temp_error;
 	temp_error_sum += temp_error;
 	if (temp_error_sum > 600) temp_error_sum = 600;
 	if (temp_error_sum < -50) temp_error_sum = -50;

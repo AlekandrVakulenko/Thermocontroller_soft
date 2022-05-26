@@ -81,7 +81,7 @@ int main(void){
 		UART_output_buffer.data.Temp_sp_cK = (uint16_t)(Temp_setpoint_f*100);
 		UART_output_buffer.data.Temp_r_t_cK = (uint16_t)(Temp_ramp_target_f*100);
 		UART_output_buffer.data.Vout_d = voltageout_d;
-		UART_output_buffer.data.Vin_d = adc_filtered_value; //unused (-2)
+		UART_output_buffer.data.Vin_d = adc_filtered_value;
 		UART_output_buffer.data.trig_time = trig_last_value; //too long (-2)
 		UART_output_buffer.data.serv1 = heating_flag |
 										ramping_flag << 1 |
