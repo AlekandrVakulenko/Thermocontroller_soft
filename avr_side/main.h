@@ -34,7 +34,7 @@ typedef struct UART_send_packet{
 	uint16_t Vout_d; //2
 	uint16_t Vin_d; //2
 	uint32_t trig_time; //4
-	uint8_t serv1; //1
+	uint8_t serv1; //1 //flags
 	uint8_t serv2; //1
 	uint8_t serv3; //1
 	uint8_t serv4; //1

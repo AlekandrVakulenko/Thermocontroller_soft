@@ -21,8 +21,8 @@ uint32_t trig_last_value = 0;
 
 
 float Temp_measured_f = 0;
-float Temp_setpoint_f = 0;
-float Temp_ramp_target_f = 0;
+float Temp_setpoint_f = 295;
+float Temp_ramp_target_f = 295;
 float Temp_ramp_speed_f = 0; // K/min
 uint8_t ramping_flag = 0;
 uint8_t ramp_direction = 0; // 1 - heat, 0 - cool
@@ -38,6 +38,7 @@ int main(void){
 	while(1){
 		Led_control_G2OR(heating_flag, ramping_flag, (uint8_t) (voltageout_d > 0));
 
+		//FIXME TODO: add global PID sign
 		
 		if (timer_clk == 1){
 			static uint8_t local_timer = 0;
@@ -73,7 +74,7 @@ int main(void){
 
 		if (TrigCounterFlag == 1){
 			trig_last_value = ReadTrigCounterResult();
-		} //FIXME: add else
+		}
 
 		//UART data preparing to send
 		UART_output_buffer.data.Temp_cK = (uint16_t)(Temp_measured_f*100);
@@ -82,9 +83,12 @@ int main(void){
 		UART_output_buffer.data.Vout_d = voltageout_d;
 		UART_output_buffer.data.Vin_d = adc_filtered_value; //unused (-2)
 		UART_output_buffer.data.trig_time = trig_last_value; //too long (-2)
-		UART_output_buffer.data.serv1 = heating_flag;
-		UART_output_buffer.data.serv2 = ramping_flag;
-		UART_output_buffer.data.serv3 = (uint8_t) (voltageout_d > 0);
+		UART_output_buffer.data.serv1 = heating_flag |
+										ramping_flag << 1 |
+										((uint8_t) (voltageout_d > 0)) << 2 |
+										(PIND & 0b00000100) << 1;
+		UART_output_buffer.data.serv2 = 2;
+		UART_output_buffer.data.serv3 = 3;
 		UART_output_buffer.data.serv4 = 4; //unused (-1)
 
 		if (ReadUARTsendtimer(Uart_send_period)){ //It's time to send data to PC
@@ -95,6 +99,7 @@ int main(void){
 				}
 				Uart_ackn = 1;
 				Uart_request_flag = 0;
+				trig_last_value = 0; //crear after send
 			}
 		}
 
@@ -208,8 +213,8 @@ void UartCMDexecute(void){ //переделать в SWITCH CASE
 			heating_flag = 1;
 		} else if (UART_CMD.cmd == 0x0C) { //Disable heater
 			heating_flag = 0;
-		} else if (UART_CMD.cmd == 0x0D) {
-
+		} else if (UART_CMD.cmd == 0x0D) { //Stop ramp
+			ramping_flag = 0;
 		} else if (UART_CMD.cmd == 0x0E) {
 
 		} else {

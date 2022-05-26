@@ -6,4 +6,5 @@ avr_side/Debug
 *.xml
 *.cproj
 *.rar
-
+*.txt
+*.asv
