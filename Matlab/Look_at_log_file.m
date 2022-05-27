@@ -12,7 +12,7 @@ time = [1:numel(Time.seconds)]*Time_step;
 
 
 figure; hold on
-plot(time, Temp.actual, '-r', 'linewidth', 1);
+plot(time, Temp.actual, '-r', 'linewidth', 2);
 plot(time, Temp.setpoint, '--b', 'linewidth', 1);
 plot(time, Temp.target, '--g', 'linewidth', 1);
 title('Temperature')
