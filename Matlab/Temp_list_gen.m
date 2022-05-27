@@ -5,8 +5,9 @@ addpath('include/')
 Output_file_adr = '../LabView Side/input_T_list_2.txt';
 
 % Temp_list = [20:2:120 118:-2:20] + 273.15;
-Temp_list = [25:5:40 35:-5:20] + 273.15;
+Temp_list = [25:25:100 75:-25:25] + 273.15;
 
+disp(Temp_list' - 273.15)
 
 create_file(Temp_list, Output_file_adr);
 
