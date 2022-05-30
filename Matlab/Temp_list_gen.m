@@ -47,7 +47,7 @@ disp(['Full time: ' num2str(Exp_full_time/60) ' hours'])
 %%
 
 Output_file_adr = '../LabView Side/T_list_all_temps.txt';
-create_file(Temp_list_All, Output_file_adr);
+create_file(Temp_list_full_K, Output_file_adr);
 
 
 
@@ -58,8 +58,8 @@ if size(Temp_list, 1) ~= 1
 end
 
 [Max, ind] = max(Temp_list - 273.15);
-if Max > 120
-    Msg = ['Temp exceed 120C limit: T = ' num2str(Max), ' at i =  ' num2str(ind)];
+if Max > 126.86
+    Msg = ['Temp exceed 126C limit: T = ' num2str(Max), ' at i =  ' num2str(ind)];
     error(Msg);
 end
 

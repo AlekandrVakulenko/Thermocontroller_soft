@@ -54,7 +54,7 @@ int main(void){
 							ramping_flag = 0;
 							Temp_setpoint_f = Temp_ramp_target_f;
 						}
-					} else {
+						} else {
 						Temp_setpoint_f -= delta_temp;
 						if (Temp_setpoint_f <= Temp_ramp_target_f){
 							ramping_flag = 0;
@@ -69,7 +69,12 @@ int main(void){
 
 			voltageout_d = PID_func(&Temp_setpoint_f, &Temp_measured_f);
 			if (Temp_measured_f > 395) voltageout_d = 0; //second protection
-			if (heating_flag) DAC_set(voltageout_d);
+			if (heating_flag){
+				DAC_set(voltageout_d);
+			}
+			else {
+				voltageout_d = 0;
+			}
 		}
 
 		if (TrigCounterFlag == 1){
