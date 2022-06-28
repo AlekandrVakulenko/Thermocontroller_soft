@@ -3,12 +3,15 @@ clc
 addpath('include/')
 
 Log_file_adr = '../LabView Side/Null_Log.txt';
+% Log_file_adr = 'F:/_OneDrive/YandexDisk/YandexDisk/Компьютер MAINHOMEPC/OneDrive - Personal/_Diffraction/LOG_60-125.txt';
+
 [Temp, Time, Voltage, Counter, Flag] = open_log_file(Log_file_adr);
 clearvars Log_file_adr
 
-Time_step = 0.050; %s (manual input time step)
+Time_step = 0.100; %s (manual input time step)
 % time = Time.seconds;
 time = [1:numel(Time.seconds)]*Time_step;
+Time.time = time';
 
 
 figure; hold on
@@ -42,11 +45,13 @@ ylabel('Temp, K')
 
 %%
 
-x = Voltage.vout(1:end/2).^2/17;
-y = Temp.actual(1:end/2);
 
 
-plot(x, y)
+
+
+
+
+
 
 
 
