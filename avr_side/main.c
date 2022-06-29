@@ -28,6 +28,7 @@ uint8_t ramping_flag = 0;
 uint8_t ramp_direction = 0; // 1 - heat, 0 - cool
 uint8_t heating_flag = 0;
 
+const float Temp_limit_C = 150;
 
 //----------------------------------------------------------------------------
 //----------------------------------Main--------------------------------------
@@ -68,11 +69,10 @@ int main(void){
 			Temp_measured_f = (float)adc_filtered_value/65536*5 * 58.5 + 189.9;
 
 			voltageout_d = PID_func(&Temp_setpoint_f, &Temp_measured_f);
-			if (Temp_measured_f > 395) voltageout_d = 0; //second protection
+			if (Temp_measured_f > Temp_limit_C + 273.15) voltageout_d = 0; //Temp protection
 			if (heating_flag){
 				DAC_set(voltageout_d);
-			}
-			else {
+			} else {
 				voltageout_d = 0;
 			}
 		}
@@ -104,7 +104,7 @@ int main(void){
 				}
 				Uart_ackn = 1;
 				Uart_request_flag = 0;
-				trig_last_value = 0; //crear after send
+				trig_last_value = 0; //clear after send
 			}
 		}
 

@@ -66,8 +66,6 @@ uint16_t PID_func(float* Temp_setpoint_f, float *Temp_measured_f){
 	if (PID_out < 0) PID_out = 0;
 	if (PID_out > 2048) PID_out = 2048;
 
-	if (*Temp_measured_f > 395) PID_out = 0; //first protection
-
 	return (uint16_t)PID_out;
 }
 
